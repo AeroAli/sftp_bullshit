@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+import json
 
 import pysftp
 
@@ -22,8 +23,9 @@ def sam_sftp():
     files = get_files()
     with pysftp.Connection(account["sam"]["host"], username=account["sam"]["username"],
                            password=account["sam"]["password"]) as sftp:
+        user = account["sam"]["username"]
         # print(sftp.getcwd())
-        with sftp.cd("../saberinblue"):
+        with sftp.cd(f"/home/{user}"):
             print(sftp.getcwd())
             for folder, fic_dict in files.items():
                 print(folder)
@@ -32,21 +34,32 @@ def sam_sftp():
                     sftp.cwd(folder)
                 except:
                     sftp.cwd(folder)
-                directory_structure = sftp.listdir_attr()
                 for value in fic_dict:
-                    print(sftp.getcwd())
-                    sftp.put(value)
+                    remote_file = f"{folder}/{value.split('/')[-1]}"
+                    local_size = os.stat(value).st_size
+                    print(f"{value.split('/')[-1]}")
+                    try:
+                        remote_size = sftp.stat(remote_file).st_size
+                        # print(f"{value.split('/')[-1]}:\n\tlocal size: {local_size}:\n\tremote size: {remote_size}")
+                        if remote_size != local_size:
+                            sftp.put(value)
+                    except:
+                        # print(f"{value.split('/')[-1]}:\n\tlocal size: {local_size}")
+                        sftp.put(value)
+                    # print(sftp.getcwd())
+                directory_structure = sftp.listdir_attr()
                 for attr in directory_structure:
                     print(attr.filename, attr)
-                sftp.cwd("/home/saberinblue")
+                sftp.cwd(f"/home/{user}")
                 print(sftp.getcwd())
 
 
 def get_files():
-    target_folder = "old/www.samgabrielvo.com/misc"
+    user = ""
+    target_folder = ""
     target_string = ""
     wanted_folders = []
-    user = ""
+    wanted_folder = []
     print(os.getcwd())
     now = datetime.now()
     current_time = now.strftime("%H:%M:%S")
@@ -67,6 +80,13 @@ def get_files():
 
                 if len(folder) > 1:
                     # print(folder[0])
+                    for i in wanted_folder:
+                        if i == folder:
+                            try:
+                                file_dict[f"/home/{user}/{file.split('old/www.')[1].split(folder)[0]}{folder}"].append(file)
+                            except:
+                                file_dict[f"/home/{user}/{file.split('old/www.')[1].split(folder)[0]}{folder}"] = [file]
+
                     for i in wanted_folders:
                         if i == folder:
                             # print(file)
@@ -75,19 +95,16 @@ def get_files():
                             if extension not in ["mov", "rar", "zip", "wav", "mp4"]:
                                 # print(short)
                                 try:
-                                    file_dict[
-                                        f"/home/{user}/{file.split('old/www.')[1].split(folder)[0]}{folder}"].append(
-                                        file)
+                                    file_dict[f"/home/{user}/{file.split('old/www.')[1].split(folder)[0]}{folder}"].append(file)
                                 except:
-                                    file_dict[f"/home/{user}/{file.split('old/www.')[1].split(folder)[0]}{folder}"] = [
-                                        file]
+                                    file_dict[f"/home/{user}/{file.split('old/www.')[1].split(folder)[0]}{folder}"] = [file]
                             # if extension not in ext:
                             #     ext.append(extension)
                 if target_string in file:
                     try:
-                        file_dict[f"/home/{user}/samgabrielvo.com/misc/"].append(file)
+                        file_dict[f"/home/{target_folder.split('old/www.')[-1]}"].append(file)
                     except:
-                        file_dict[f"/home/{user}/samgabrielvo.com/misc/"] = [file]
+                        file_dict[f"/home/{target_folder.split('old/www.')[-1]}"] = [file]
         # for file in files:
         #     print(file)
         # print(ext)
@@ -100,12 +117,12 @@ def get_files():
 
 
 def froops_sftp():
-    files = {"/home/aeroali/test": ["sftp_magic.py"], "/home/aeroali/test2": ["sftp_magic.py"]}
+    files = {"/home/aeroali/test": ["test.txt"], "/home/aeroali/test2": ["test.txt"]}
     with pysftp.Connection(account["froops"]["host"], username=account["froops"]["username"],
                            password=account["froops"]["password"]) as sftp:
+        user = account["froops"]["username"]
         # print(sftp.getcwd())
-
-        with sftp.cd("../aeroali"):
+        with sftp.cd(f"/home/{user}"):
             for folder, fic_dict in files.items():
                 print(folder)
                 try:
@@ -113,13 +130,22 @@ def froops_sftp():
                     sftp.cwd(folder)
                 except:
                     sftp.cwd(folder)
-                directory_structure = sftp.listdir_attr()
                 for value in fic_dict:
-                    print(sftp.getcwd())
-                    sftp.put(value)
+                    remote_file = f"{folder}/{value.split('/')[-1]}"
+                    local_size = os.stat(value).st_size
+                    try:
+                        remote_size = sftp.stat(remote_file).st_size
+                        print(local_size, remote_size)
+                        if remote_size != local_size:
+                            sftp.put(value)
+                    except:
+                        print(local_size)
+                        sftp.put(value)
+                    # print(sftp.getcwd())
+                    directory_structure = sftp.listdir_attr()
                     for attr in directory_structure:
                         print(attr.filename, attr)
-                    sftp.cwd("../")
+                    sftp.cwd(f"/home/{user}")
                     print(sftp.getcwd())
 
 
@@ -132,7 +158,7 @@ def structure():
 
 
 if __name__ == "__main__":
-    # get_files()
     sam_sftp()
     # froops_sftp()
+    # get_files()
     # structure()
